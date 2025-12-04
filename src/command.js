@@ -46,7 +46,8 @@ function commonCmdToSQL(stmt) {
 function descToSQL(stmt) {
   const { type, table } = stmt
   const action = toUpper(type)
-  return `${action} ${identifierToSql(table)}`
+  const tableName = typeof table === 'string' ? identifierToSql(table) : tableToSQL(table)
+  return `${action} ${tableName}`
 }
 
 function executeToSQL(stmt) {
@@ -175,8 +176,8 @@ function ifToSQL(stmt) {
   if (elseifExpr) {
     result.push(
       elseifExpr.map(
-        elseif => [toUpper(elseif.type), exprToSQL(elseif.boolean_expr), 'THEN', astToSQL(elseif.then.ast || elseif.then), elseif.semicolon].filter(hasVal).join(' ')
-      ).join(' ')
+        elseif => [toUpper(elseif.type), exprToSQL(elseif.boolean_expr), 'THEN', astToSQL(elseif.then.ast || elseif.then), elseif.semicolon].filter(hasVal).join(' '),
+      ).join(' '),
     )
   }
   if (elseExpr) result.push('ELSE', `${astToSQL(elseExpr.ast || elseExpr)}${semicolons[1]}`)
@@ -207,7 +208,7 @@ function grantAndRevokeToSQL(stmt) {
       case 'priv':
         result.push(
           literalToSQL(on.object_type),
-          on.priv_level.map(privLevel => [identifierToSql(privLevel.prefix), identifierToSql(privLevel.name)].filter(hasVal).join('.')).join(', ')
+          on.priv_level.map(privLevel => [identifierToSql(privLevel.prefix), identifierToSql(privLevel.name)].filter(hasVal).join('.')).join(', '),
         )
         break
       case 'proxy':

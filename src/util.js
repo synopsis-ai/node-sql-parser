@@ -155,7 +155,7 @@ function identifierToSql(ident, isDual, surround) {
   if (isDual === true) return `'${ident}'`
   if (!ident) return
   if (ident === '*') return ident
-  if (surround) return `${surround}${ident}${surround}`
+  if (surround != null) return `${surround}${ident}${surround}`
   const { database } = getParserOpt()
   switch (database && database.toLowerCase()) {
     case 'mysql':
@@ -292,12 +292,13 @@ function onPartitionsToSQL(expr) {
 }
 
 function dataTypeToSQL(expr) {
-  const { dataType, length, parentheses, scale, suffix } = expr
+  const { schema, dataType, length, parentheses, scale, suffix } = expr
   let str = ''
   if (length != null) str = scale ? `${length}, ${scale}` : length
   if (parentheses) str = `(${str})`
   if (suffix && suffix.length) str += ` ${suffix.join(' ')}`
-  return `${dataType}${str}`
+  const prefix = schema ? `${schema}.` : ''
+  return `${prefix}${dataType}${str}`
 }
 
 function arrayStructTypeToSQL(expr) {

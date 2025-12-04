@@ -812,7 +812,7 @@ create_domain_stmt
     }
 create_table_stmt
   = a:KW_CREATE __
-    tp:KW_TEMPORARY? __
+    tp:(KW_TEMP / KW_TEMPORARY)? __
     ul:KW_UNLOGGED? __
     KW_TABLE __
     ife:if_not_exists_stmt? __
@@ -835,7 +835,7 @@ create_table_stmt
       }
     }
   /  a:KW_CREATE __
-    tp:KW_TEMPORARY? __
+    tp:(KW_TEMP / KW_TEMPORARY)? __
     ul:KW_UNLOGGED? __
     KW_TABLE __
     ife:if_not_exists_stmt? __
@@ -884,7 +884,7 @@ create_table_stmt
       }
     }
   / a:KW_CREATE __
-    tp:KW_TEMPORARY? __
+    tp:(KW_TEMP / KW_TEMPORARY)? __
     ul:KW_UNLOGGED? __
     KW_TABLE __
     ife:if_not_exists_stmt? __
@@ -1890,6 +1890,7 @@ alter_action_list
 alter_action
   = ALTER_ADD_COLUMN
   / ALTER_ADD_CONSTRAINT
+  / ALTER_DROP_CONSTRAINT
   / ALTER_DROP_COLUMN
   / ALTER_ADD_INDEX_OR_KEY
   / ALTER_ADD_FULLETXT_SPARITAL_INDEX
@@ -1900,6 +1901,7 @@ alter_action
   / ALTER_COLUMN_DATA_TYPE
   / ALTER_COLUMN_DEFAULT
   / ALTER_COLUMN_NOT_NULL
+  / ALTER_REPLICA_IDENTITY
 
 ALTER_ADD_COLUMN
   = KW_ADD __
@@ -1959,6 +1961,24 @@ ALTER_ADD_CONSTRAINT
       return {
         action: 'add',
         create_definitions: c,
+        resource: 'constraint',
+        type: 'alter',
+      }
+    }
+
+ALTER_DROP_CONSTRAINT
+  = KW_DROP __ kc:'CONSTRAINT'i __ c:ident {
+  /* => {
+        action: 'drop';
+        constraint: ident,
+        keyword: 'constraint',
+        resource: 'constraint',
+        type: 'alter';
+      } */
+      return {
+        action: 'drop',
+        constraint: c,
+        keyword: kc.toLowerCase(),
         resource: 'constraint',
         type: 'alter',
       }
@@ -2140,6 +2160,25 @@ ALTER_COLUMN_NOT_NULL
         keyword: kc,
         resource: 'column',
         nullable: n,
+        type: 'alter',
+      }
+  }
+
+ALTER_REPLICA_IDENTITY
+  = 'REPLICA'i __ 'IDENTITY'i __ n:('DEFAULT'i / 'FULL'i / 'NOTHING'i) {
+    /* => {
+        action: 'replica';
+        keyword?: 'identity';
+        resource: 'replica_identity';
+        type: 'alter';
+        replica_identity: 'default' | 'full' | 'nothing';
+      }
+      */
+      return {
+        action: 'replica',
+        keyword: 'identity',
+        resource: 'replica_identity',
+        replica_identity: n,
         type: 'alter',
       }
   }
@@ -4124,7 +4163,11 @@ returning_stmt
 
 insert_value_clause
   = value_clause
-  / select_stmt_nake
+  / u:union_stmt {
+      // => union_stmt_node
+      return u.ast
+  }
+
 
 insert_partition
   = KW_PARTITION __ LPAREN __ head:ident_name tail:(__ COMMA __ ident_name)* __ RPAREN {
@@ -5777,6 +5820,8 @@ KW_CIDR = "CIDR"i     !ident_start { return 'CIDR'; }
 KW_INET = "INET"i     !ident_start { return 'INET'; }
 KW_MACADDR = "MACADDR"i     !ident_start { return 'MACADDR'; }
 KW_MACADDR8 = "MACADDR8"i     !ident_start { return 'MACADDR8'; }
+KW_BIT = "BIT"i     !ident_start { return 'BIT'; }
+KW_MONEY  = "MONEY"i  !ident_start { return 'MONEY'; }
 
 KW_CURRENT_DATE     = "CURRENT_DATE"i !ident_start { return 'CURRENT_DATE'; }
 KW_ADD_DATE         = "ADDDATE"i !ident_start { return 'ADDDATE'; }
@@ -6143,6 +6188,8 @@ data_type
   / oid_type
   / record_type
   / network_address_type
+  / bit_type
+  / money_type
   / custom_types
 
 
@@ -6195,6 +6242,9 @@ numeric_type
   = t:(KW_NUMERIC / KW_DECIMAL / KW_INT / KW_INTEGER / KW_SMALLINT / KW_TINYINT / KW_MEDIUMINT / KW_BIGINT / KW_FLOAT / KW_DOUBLE __ 'PRECISION'i / KW_DOUBLE / KW_SERIAL / KW_SMALLSERIAL / KW_BIGSERIAL / KW_REAL) __ LPAREN __ l:[0-9]+ __ r:(COMMA __ [0-9]+)? __ RPAREN __ s:numeric_type_suffix? { /* =>  data_type */ return { dataType: Array.isArray(t) ? `${t[0].toUpperCase()} ${t[2].toUpperCase()}` : t, length: parseInt(l.join(''), 10), scale: r && parseInt(r[2].join(''), 10), parentheses: true, suffix: s }; }
   / t:(KW_NUMERIC / KW_DECIMAL / KW_INT / KW_INTEGER / KW_SMALLINT / KW_TINYINT / KW_MEDIUMINT / KW_BIGINT / KW_FLOAT / KW_DOUBLE __ 'PRECISION'i / KW_DOUBLE / KW_SERIAL / KW_SMALLSERIAL / KW_BIGSERIAL / KW_REAL)l:[0-9]+ __ s:numeric_type_suffix? { /* =>  data_type */ return { dataType: Array.isArray(t) ? `${t[0].toUpperCase()} ${t[2].toUpperCase()}` : t, length: parseInt(l.join(''), 10), suffix: s }; }
   / t:(KW_NUMERIC / KW_DECIMAL / KW_INT / KW_INTEGER / KW_SMALLINT / KW_TINYINT / KW_MEDIUMINT / KW_BIGINT / KW_FLOAT / KW_DOUBLE __ 'PRECISION'i / KW_DOUBLE / KW_SERIAL / KW_SMALLSERIAL / KW_BIGSERIAL / KW_REAL) __ s:numeric_type_suffix? __{ /* =>  data_type */ return { dataType: Array.isArray(t) ? `${t[0].toUpperCase()} ${t[2].toUpperCase()}` : t, suffix: s }; }
+
+money_type
+  = t:(KW_MONEY) { /* => data_type */ return { dataType: t } }
 
 oid_type
   = t:(KW_OID / KW_REGCLASS / KW_REGCOLLATION / KW_REGCONFIG / KW_REGDICTIONARY / KW_REGNAMESPACE / KW_REGOPER / KW_REGOPERATOR / KW_REGPROC / KW_REGPROCEDURE / KW_REGROLE / KW_REGTYPE) { /* => data_type */ return { dataType: t }}
@@ -6271,8 +6321,27 @@ record_type
 network_address_type
   = t:(KW_INET / KW_CIDR / KW_MACADDR8 / KW_MACADDR) {/* =>  data_type */  return { dataType: t }}
 
+bit_type
+  = t:KW_BIT __ v:('varying'i)? __ num:(__ LPAREN __ [0-9]+ __ RPAREN)? {
+    /* =>  data_type */
+    let dataType = t
+    if (v) {
+      dataType += ' VARYING'
+    }
+    const result = { dataType }
+    if (num) {
+      result.length = parseInt(num[3].join(''), 10)
+      result.parentheses = true
+    }
+    return result
+  }
+
 custom_types
-  = name:ident_name &{ return customTypes.has(name) } {
+  = schema:ident_name __ DOT __ name:ident_without_kw &{ return customTypes.has(`${schema}.${name}`) }  {
+      // => data_type
+      return { schema: schema, dataType: name }
+  }
+  / name:ident_name &{ return customTypes.has(name) } {
       // => data_type
       return { dataType: name }
   }

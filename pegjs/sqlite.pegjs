@@ -34,6 +34,7 @@
     'FROM': true,
     'FULL': true,
 
+    'GENERATED': true,
     'GROUP': true,
 
     'HAVING': true,
@@ -584,6 +585,9 @@ column_definition_opt
   / t:create_option_character_set_kw __ s:KW_ASSIGIN_EQUAL? __ v:ident_without_kw_type {
     return { character_set: { type: t, value: v, symbol: s }}
   }
+  / g:generated {
+    return { generated: g }
+  }
 
 column_definition_opt_list
   = head:column_definition_opt __ tail:(__ column_definition_opt)* {
@@ -643,6 +647,21 @@ default_expr
       value: ce
     }
   }
+generated_always
+  = ga:('GENERATED'i __ 'ALWAYS'i) {
+    return ga.join('').toLowerCase()
+  }
+
+generated
+  = gn:(generated_always? __ 'AS'i) __ LPAREN __ expr:(literal / expr) __ RPAREN __ st:('STORED'i / 'VIRTUAL'i)* {
+      return {
+        type: 'generated',
+        expr: expr,
+        value: gn.filter(s => typeof s === 'string').join(' ').toLowerCase(),
+        storage_type: st && st[0] && st[0].toLowerCase()
+      }
+    }
+
 analyze_stmt
   = a:KW_ANALYZE __ t:table_name __ {
       tableList.add(`${a}::${t.db}::${t.table}`);
@@ -1815,7 +1834,9 @@ returning_stmt
 
 insert_value_clause
   = value_clause
-  / select_stmt_nake
+  / u:union_stmt {
+      return u.ast
+  }
 
 insert_partition
   = KW_PARTITION __ LPAREN __ head:ident_name tail:(__ COMMA __ ident_name)* __ RPAREN {
@@ -2195,7 +2216,7 @@ regexp_op_right
   }
 
 like_op_right
-  = op:like_op __ right:(literal / comparison_expr ) __ es:escape_op? {
+  = op:like_op __ right:(comparison_expr / literal) __ es:escape_op? {
       if (es) right.escape = es
       return { op: op, right: right };
     }
@@ -2228,7 +2249,7 @@ multiplicative_expr
     }
 
 multiplicative_operator
-  = "*" / "/" / "%" / "||"
+  = "*" / "/" / "%" / "||" / '&' / '>>' / '<<' / '^' / '|'
 
 primary
   = cast_expr

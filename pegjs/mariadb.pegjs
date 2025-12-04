@@ -1589,6 +1589,7 @@ show_stmt
     }
   }
   / KW_SHOW __ KW_TABLES {
+    tableList.add(`show::null::null`)
     return {
       tableList: Array.from(tableList),
       columnList: columnListTableAlias(columnList),
@@ -2095,7 +2096,7 @@ locking_read
   }
 
 select_stmt_nake
-  = __ cte:with_clause? __ KW_SELECT ___
+  = __ cte:with_clause? __ KW_SELECT __
     opts:option_clause? __
     d:KW_DISTINCT?      __
     c:column_clause     __
@@ -2630,7 +2631,9 @@ returning_stmt
 
 insert_value_clause
   = value_clause
-  / select_stmt_nake
+  / u:set_op_stmt {
+      return u.ast
+  }
 
 insert_partition
   = KW_PARTITION __ LPAREN __ head:ident_name tail:(__ COMMA __ ident_name)* __ RPAREN {
@@ -3217,7 +3220,7 @@ aggr_func
   / aggr_fun_smma
 
 aggr_fun_smma
-  = name:KW_SUM_MAX_MIN_AVG  __ LPAREN __ e:expr __ RPAREN __ bc:over_partition? {
+  = name:KW_SUM_MAX_MIN_AVG  __ LPAREN __ e:or_and_expr __ RPAREN __ bc:over_partition? {
       return {
         type: 'aggr_func',
         name: name,

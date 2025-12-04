@@ -1340,6 +1340,20 @@ describe('mysql', () => {
           "SELECT * FROM `T1` EXCEPT SELECT * FROM `T2`"
         ]
       },
+      {
+        title: 'or and expr in aggr_fun_smma',
+        sql: [
+          "SELECT SUM(a = 'a' AND b = 1) as foo FROM bar;",
+          "SELECT SUM(`a` = 'a' AND `b` = 1) AS `foo` FROM `bar`"
+        ]
+      },
+      {
+        title: 'select * with no space between * and select',
+        sql: [
+          "SELECT* FROM T1",
+          "SELECT * FROM `T1`"
+        ]
+      },
     ]
     SQL_LIST.forEach(sqlInfo => {
       const { title, sql } = sqlInfo
@@ -1356,7 +1370,7 @@ describe('mysql', () => {
       expect(parser.astify.bind(parser, sql)).to.throw('Expected "!=", "#", "#-", "#>", "#>>", "%", "&", "&&", "*", "+", ",", "-", "--", "->", "->>", "/", "/*", "<", "<<", "<=", "<>", "<@", "=", ">", ">=", ">>", "?", "?&", "?|", "@>", "AND", "BETWEEN", "IN", "IS", "LIKE", "NOT", "ON", "OR", "OVER", "REGEXP", "RLIKE", "USING", "XOR", "^", "div", "mod", "|", "||", or [ \\t\\n\\r] but ")" found.')
       expect(parser.astify.bind(parser, 'select convert("");')).to.throw('Expected "!=", "#", "#-", "#>", "#>>", "%", "&", "&&", "*", "+", ",", "-", "--", "->", "->>", "/", "/*", "<", "<<", "<=", "<>", "<@", "=", ">", ">=", ">>", "?", "?&", "?|", "@>", "AND", "BETWEEN", "COLLATE", "IN", "IS", "LIKE", "NOT", "OR", "REGEXP", "RLIKE", "USING", "XOR", "^", "div", "mod", "|", "||", or [ \\t\\n\\r] but ")" found.')
       sql = 'SELECT AVG(Quantity,age) FROM table1;'
-      expect(parser.astify.bind(parser, sql)).to.throw('Expected "!=", "#", "#-", "#>", "#>>", "%", "&", "&&", "(", ")", "*", "+", "-", "--", "->", "->>", ".", "/", "/*", "<", "<<", "<=", "<>", "<@", "=", ">", ">=", ">>", "?", "?&", "?|", "@>", "BETWEEN", "COLLATE", "IN", "IS", "LIKE", "NOT", "REGEXP", "RLIKE", "XOR", "^", "div", "mod", "|", "||", [ \\t\\n\\r], [A-Za-z0-9_$\\x80-￿], or [A-Za-z0-9_:一-龥À-ſ] but "," found')
+      expect(parser.astify.bind(parser, sql)).to.throw('Expected "!=", "#", "#-", "#>", "#>>", "%", "&", "&&", "(", ")", "*", "+", "-", "--", "->", "->>", ".", "/", "/*", "<", "<<", "<=", "<>", "<@", "=", ">", ">=", ">>", "?", "?&", "?|", "@>", "AND", "BETWEEN", "COLLATE", "IN", "IS", "LIKE", "NOT", "OR", "REGEXP", "RLIKE", "XOR", "^", "div", "mod", "|", "||", [ \\t\\n\\r], [A-Za-z0-9_$\\x80-￿], or [A-Za-z0-9_:一-龥À-ſ] but "," found')
     })
 
     it('should join multiple table with comma', () => {

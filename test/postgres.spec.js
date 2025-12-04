@@ -1929,6 +1929,27 @@ describe('Postgres', () => {
         'SELECT * FROM "table_name" WHERE foo.bar.baz.qux = FALSE'
       ]
     },
+    {
+      title: 'drop constraint',
+      sql: [
+        `ALTER TABLE "test" DROP CONSTRAINT "test_constraint";`,
+        'ALTER TABLE "test" DROP CONSTRAINT "test_constraint"'
+      ]
+    },
+    {
+      title: 'add constraint',
+      sql: [
+        'ALTER TABLE "configuration" ADD CONSTRAINT "configuration_pk" PRIMARY KEY("something","something_else","something_something_else");',
+        'ALTER TABLE "configuration" ADD CONSTRAINT "configuration_pk" PRIMARY KEY ("something", "something_else", "something_something_else")',
+      ]
+    },
+    {
+      title: 'alter replica identity',
+      sql: [
+        'ALTER TABLE "table_name" REPLICA IDENTITY FULL;',
+        'ALTER TABLE "table_name" REPLICA IDENTITY FULL',
+      ]
+    },
   ]
   function neatlyNestTestedSQL(sqlList){
     sqlList.forEach(sqlInfo => {
@@ -2322,6 +2343,51 @@ describe('Postgres', () => {
           'CREATE TABLE "t_pgsql_generate_test" (id_col SERIAL NOT NULL PRIMARY KEY, small_int_col SMALLINT NOT NULL, small_serial_col SMALLSERIAL NOT NULL, integer_type_col INTEGER NOT NULL, big_int_col BIGINT NOT NULL)'
         ]
       },
+      {
+        title: 'custom data type for create table',
+        sql: [
+          `create type public.Gender AS ENUM ('MALE', 'FEMALE');
+            create table users (
+              gender public."Gender"
+            );`,
+          `CREATE TYPE "public"."Gender" AS ENUM ('MALE', 'FEMALE') ; CREATE TABLE "users" (gender public.Gender)`
+        ]
+      },
+      {
+        title: 'bit data type',
+        sql: [
+          'SELECT CAST(1 AS bit)',
+          'SELECT CAST(1 AS BIT)',
+        ]
+      },
+      {
+        title: 'insert into union all stmt',
+        sql: [
+          `truncate table T_LMT_SAMPLE_ALL_DWD_74;insert into T_LMT_SAMPLE_ALL_DWD_74 select 	ID, BLD_STATION_ID, SAMPLE_GENERAL_ID, DON_CODE, DON_FLAG_ID, DON_KIND_ID, SAMPLE_SOURCE_ID, COLLECT_PLACE_ID, SAMPLE_TYPE_ID, SAMPLE_PURPOSE_ID, URGENT_STATUS_ID, BLD_VOLUME, IS_CSEND_SAMPLE, ABO_ID, RHD_ID, REG_DATE, REG_MAN_ID, DEPT_ID, SAMPLE_QUALITY_ID, TEST_POLICY_ID, PROCESS_MODE_ID, AUDIT_ABO_ID, IS_AUDIT_ABO, IS_USED, IS_CREV_SAMPLE, SAMPLE_STATUS_ID, SEND_DATE, COLLECT_DATE, RECEIVE_DATE, NAT_TEST_MODE_ID, NOT_RECEIVE_REASON_ID, CUR_DEPT_ID, SHIPPING_STATUS_ID, LAST_RECEIPT_ID, SEX_ID, IS_CENTRIFUGAL, RECEIVE_MAN_ID, current_date as WAREHOUSE_DEFAULT_TIME from T_LMT_SAMPLE_ODS_81 UNION ALL select ID, BLD_STATION_ID, SAMPLE_GENERAL_ID, DON_CODE, DON_FLAG_ID, DON_KIND_ID, SAMPLE_SOURCE_ID, COLLECT_PLACE_ID, SAMPLE_TYPE_ID, SAMPLE_PURPOSE_ID, URGENT_STATUS_ID, BLD_VOLUME, IS_CSEND_SAMPLE, ABO_ID, RHD_ID, REG_DATE, REG_MAN_ID, DEPT_ID, SAMPLE_QUALITY_ID, TEST_POLICY_ID, PROCESS_MODE_ID, AUDIT_ABO_ID, IS_AUDIT_ABO, IS_USED, IS_CREV_SAMPLE, SAMPLE_STATUS_ID, SEND_DATE, COLLECT_DATE, RECEIVE_DATE, NAT_TEST_MODE_ID, NOT_RECEIVE_REASON_ID, CUR_DEPT_ID, SHIPPING_STATUS_ID, LAST_RECEIPT_ID, SEX_ID, IS_CENTRIFUGAL, RECEIVE_MAN_ID, current_date as WAREHOUSE_DEFAULT_TIME from T_LMT_SAMPLE_STORE_ODS_81`,
+          'TRUNCATE TABLE "T_LMT_SAMPLE_ALL_DWD_74" ; INSERT INTO "T_LMT_SAMPLE_ALL_DWD_74" SELECT ID, BLD_STATION_ID, SAMPLE_GENERAL_ID, DON_CODE, DON_FLAG_ID, DON_KIND_ID, SAMPLE_SOURCE_ID, COLLECT_PLACE_ID, SAMPLE_TYPE_ID, SAMPLE_PURPOSE_ID, URGENT_STATUS_ID, BLD_VOLUME, IS_CSEND_SAMPLE, ABO_ID, RHD_ID, REG_DATE, REG_MAN_ID, DEPT_ID, SAMPLE_QUALITY_ID, TEST_POLICY_ID, PROCESS_MODE_ID, AUDIT_ABO_ID, IS_AUDIT_ABO, IS_USED, IS_CREV_SAMPLE, SAMPLE_STATUS_ID, SEND_DATE, COLLECT_DATE, RECEIVE_DATE, NAT_TEST_MODE_ID, NOT_RECEIVE_REASON_ID, CUR_DEPT_ID, SHIPPING_STATUS_ID, LAST_RECEIPT_ID, SEX_ID, IS_CENTRIFUGAL, RECEIVE_MAN_ID, CURRENT_DATE AS "WAREHOUSE_DEFAULT_TIME" FROM "T_LMT_SAMPLE_ODS_81" UNION ALL SELECT ID, BLD_STATION_ID, SAMPLE_GENERAL_ID, DON_CODE, DON_FLAG_ID, DON_KIND_ID, SAMPLE_SOURCE_ID, COLLECT_PLACE_ID, SAMPLE_TYPE_ID, SAMPLE_PURPOSE_ID, URGENT_STATUS_ID, BLD_VOLUME, IS_CSEND_SAMPLE, ABO_ID, RHD_ID, REG_DATE, REG_MAN_ID, DEPT_ID, SAMPLE_QUALITY_ID, TEST_POLICY_ID, PROCESS_MODE_ID, AUDIT_ABO_ID, IS_AUDIT_ABO, IS_USED, IS_CREV_SAMPLE, SAMPLE_STATUS_ID, SEND_DATE, COLLECT_DATE, RECEIVE_DATE, NAT_TEST_MODE_ID, NOT_RECEIVE_REASON_ID, CUR_DEPT_ID, SHIPPING_STATUS_ID, LAST_RECEIPT_ID, SEX_ID, IS_CENTRIFUGAL, RECEIVE_MAN_ID, CURRENT_DATE AS "WAREHOUSE_DEFAULT_TIME" FROM "T_LMT_SAMPLE_STORE_ODS_81"'
+        ]
+      },
+      {
+        title: 'create table stmt',
+        sql: [
+          'CREATE TEMP TABLE test (id INT, name TEXT);',
+          'CREATE TEMP TABLE "test" (id INT, name TEXT)'
+        ]
+      },
+      {
+        title: 'money type',
+        sql: [
+          'CREATE TEMP TABLE test (id INT, price MONEY);',
+          'CREATE TEMP TABLE "test" (id INT, price MONEY)'
+        ]
+      },
+      {
+        title: 'create index',
+        sql: [
+          `CREATE INDEX "test" ON "test" USING BTREE ("a" ASC, "b" ASC, "c" DESC);`,
+          'CREATE INDEX "test" ON "test" USING BTREE ("a" ASC, "b" ASC, "c" DESC)'
+        ]
+      }
     ]
     neatlyNestTestedSQL(SQL_LIST)
   })

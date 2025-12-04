@@ -178,6 +178,19 @@
     return typeof strOrLiteral === 'string' ? { type: 'same', value: strOrLiteral } : strOrLiteral
   }
 
+  function getSurroundFromLiteralType(literal) {
+    switch (literal.type) {
+      case 'double_quote_string':
+        return '"'
+      case 'single_quote_string':
+        return "'"
+      case 'backticks_quote_string':
+        return '`'
+      default:
+        return ''
+    }
+  }
+
   const cmpPrefixMap = {
     '+': true,
     '-': true,
@@ -2524,13 +2537,14 @@ join_op
   / (KW_INNER __)? KW_JOIN { /* => 'INNER JOIN' */ return 'INNER JOIN'; }
 
 table_name
-  = dt:ident schema:(__ DOT __ ident) tail:(__ DOT __ ident) {
-      // => { db?: ident; schema?: ident, table: ident | '*'; }
-      const obj = { db: null, table: dt, ...getLocationObject(), };
+  = db:ident_without_kw_type schema:(__ DOT __ ident_without_kw_type) tail:(__ DOT __ ident_without_kw_type) {
+      const obj = { db: null, table: db.value };
       if (tail !== null) {
-        obj.db = dt;
-        obj.schema = schema[3];
-        obj.table = tail[3];
+        obj.db = db.value;
+        obj.catalog = db.value;
+        obj.schema = schema[3].value;
+        obj.table = tail[3].value;
+        obj.surround = { table: getSurroundFromLiteralType(tail[3]), db: getSurroundFromLiteralType(db), schema: getSurroundFromLiteralType(schema[3]) };
       }
       return obj;
     }
@@ -2542,21 +2556,22 @@ table_name
         ...getLocationObject(),
       }
     }
-  / dt:ident tail:(__ DOT __ ident)? {
-    // => IGNORE
-      const obj = { db: null, table: dt, ...getLocationObject(), };
+  / dt:ident_without_kw_type tail:(__ DOT __ ident_without_kw_type)? {
+      const obj = { db: null, table: dt.value, surround: { table: getSurroundFromLiteralType(dt) } };
       if (tail !== null) {
-        obj.db = dt;
-        obj.table = tail[3];
+        obj.db = dt.value;
+        obj.table = tail[3].value;
+        obj.surround = { table: getSurroundFromLiteralType(tail[3]), db: getSurroundFromLiteralType(dt) };
       }
       return obj;
     }
-  / v:var_decl {
+    / v:var_decl {
     // => IGNORE
       v.db = null;
       v.table = v.name;
       return v;
     }
+
 
 or_and_expr
 	= head:expr tail:(__ (KW_AND / KW_OR) __ expr)* {
@@ -2889,7 +2904,9 @@ returning_stmt
 
 insert_value_clause
   = value_clause
-  / select_stmt_nake
+  / u:union_stmt {
+      return u.ast
+  }
 
 insert_partition
   = KW_PARTITION __ LPAREN __ head:ident_name tail:(__ COMMA __ ident_name)* __ RPAREN {

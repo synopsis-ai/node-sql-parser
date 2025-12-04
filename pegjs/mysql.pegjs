@@ -265,6 +265,7 @@
     'VARCHARACTER': true,
     'VARYING': true,
     'VIRTUAL': true,
+    'VECTOR': true,
 
     'WHEN': true,
     'WHERE': true,
@@ -1871,6 +1872,7 @@ show_stmt
     }
   }
   / KW_SHOW __ KW_TABLES {
+    tableList.add(`show::null::null`)
     return {
       tableList: Array.from(tableList),
       columnList: columnListTableAlias(columnList),
@@ -2352,7 +2354,7 @@ locking_read
   }
 
 select_stmt_nake
-  = __ cte:with_clause? __ KW_SELECT ___
+  = __ cte:with_clause? __ KW_SELECT __
     opts:option_clause? __
     d:KW_DISTINCT?      __
     c:column_clause     __
@@ -2694,6 +2696,7 @@ join_op
   / KW_RIGHT __ KW_OUTER? __ KW_JOIN { return 'RIGHT JOIN'; }
   / KW_FULL __ KW_OUTER? __ KW_JOIN { return 'FULL JOIN'; }
   / KW_CROSS __ KW_JOIN { return 'CROSS JOIN'; }
+  / KW_STRAIGHT_JOIN { return 'STRAIGHT_JOIN'; }
   / (KW_INNER __)? KW_JOIN { return 'INNER JOIN'; }
 
 table_name
@@ -2891,7 +2894,9 @@ set_item
 
 insert_value_clause
   = value_clause
-  / select_stmt_nake
+  / u:set_op_stmt {
+      return u.ast
+  }
 
 insert_partition
   = KW_PARTITION __ LPAREN __ head:ident_name tail:(__ COMMA __ ident_name)* __ RPAREN {
@@ -3496,7 +3501,7 @@ aggr_func
   / aggr_fun_smma
 
 aggr_fun_smma
-  = name:KW_SUM_MAX_MIN_AVG  __ LPAREN __ e:expr __ RPAREN __ bc:over_partition? {
+  = name:KW_SUM_MAX_MIN_AVG  __ LPAREN __ e:or_and_expr __ RPAREN __ bc:over_partition? {
       return {
         type: 'aggr_func',
         name: name,
@@ -4121,6 +4126,7 @@ KW_RIGHT    = "RIGHT"i    !ident_start
 KW_FULL     = "FULL"i     !ident_start
 KW_INNER    = "INNER"i    !ident_start
 KW_CROSS    = "CROSS"i    !ident_start
+KW_STRAIGHT_JOIN = "STRAIGHT_JOIN"i !ident_start
 KW_JOIN     = "JOIN"i     !ident_start
 KW_OUTER    = "OUTER"i    !ident_start
 KW_OVER     = "OVER"i     !ident_start
@@ -4212,6 +4218,7 @@ KW_TIMESTAMP = "TIMESTAMP"i !ident_start { return 'TIMESTAMP'; }
 KW_YEAR = "YEAR"i !ident_start { return 'YEAR'; }
 KW_TRUNCATE = "TRUNCATE"i !ident_start { return 'TRUNCATE'; }
 KW_USER     = "USER"i     !ident_start { return 'USER'; }
+KW_VECTOR   = "VECTOR"i     !ident_start { return 'VECTOR'; }
 
 KW_CURRENT_DATE     = "CURRENT_DATE"i !ident_start { return 'CURRENT_DATE'; }
 KW_ADD_DATE         = "ADDDATE"i !ident_start { return 'ADDDATE'; }
@@ -4558,6 +4565,7 @@ data_type
   / binary_type
   / blob_type
   / geometry_type
+  / vector_type
 
 data_type_size
   = LPAREN __ l:[0-9]+ __ RPAREN __ s:numeric_type_suffix? {
@@ -4632,3 +4640,15 @@ text_type
 
 geometry_type
   = t:(KW_GEOMETRY / KW_POINT / KW_LINESTRING / KW_POLYGON / KW_MULTIPOINT / KW_MULTILINESTRING / KW_MULTIPOLYGON / KW_GEOMETRYCOLLECTION ) { return { dataType: t }}
+
+vector_type
+  = t:KW_VECTOR __ LPAREN __ d:[0-9]+ __ RPAREN {
+    return {
+      dataType: t,
+      length: parseInt(d.join(''), 10),
+      parentheses: true
+    };
+  }
+  / t:KW_VECTOR {
+    return { dataType: t };
+  }

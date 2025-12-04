@@ -21,6 +21,7 @@
 
     'DELETE': true,
     'DESC': true,
+    'DESCRIBE': true,
     'DISTINCT': true,
     'DROP': true,
 
@@ -113,7 +114,9 @@
     current_user: true,
     user: true,
     session_user: true,
-    system_user: true
+    system_user: true,
+    array_agg: true,
+    string_agg: true
   }
 
   function getLocationObject() {
@@ -254,6 +257,7 @@ cmd_stmt
   / set_stmt
   / lock_stmt
   / show_stmt
+  / desc_stmt
   / deallocate_stmt
 
 create_stmt
@@ -1988,6 +1992,25 @@ show_stmt
     }
   }
 
+desc_stmt
+  = KW_DESCRIBE __ t:table_name {
+    /*
+      export interface desc_stmt_node {
+        type: 'describe';
+        table: table_name;
+      }
+      => AstStatement<desc_stmt_node>
+    */
+    return {
+      tableList: Array.from(tableList),
+      columnList: columnListTableAlias(columnList),
+      ast: {
+        type: 'describe',
+        table: t
+      }
+    };
+  }
+
 deallocate_stmt
   = KW_DEALLOCATE __ p:('PREPARE'i)? __ i:(ident_name / KW_ALL) {
     return {
@@ -2664,7 +2687,10 @@ window_frame_value
   / literal_numeric
 
 partition_by_clause
-  = KW_PARTITION __ KW_BY __ bc:column_ref_list { return bc.map(item => ({ type: 'expr', expr: item })) }
+  = KW_PARTITION __ KW_BY __ head:expr tail:(__ COMMA __ expr)* {
+    const list = createList(head, tail);
+    return list.map(item => ({ type: 'expr', expr: item }));
+  }
 
 order_by_clause
   = KW_ORDER __ KW_BY __ l:order_by_list { /* => order_by_list */ return l; }
@@ -2832,7 +2858,9 @@ returning_stmt
 
 insert_value_clause
   = value_clause
-  / select_stmt_nake
+  / u:union_stmt {
+      return u.ast
+  }
 
 insert_partition
   = KW_PARTITION __ LPAREN __ head:ident_name tail:(__ COMMA __ ident_name)* __ RPAREN {
@@ -3763,7 +3791,7 @@ concat_separator
   = kw:COMMA __ s:literal_string {
     // => { symbol: ','; delimiter: literal_string; }
     return {
-      symbol: ke,
+      symbol: kw,
       delimiter: s
     }
   }
@@ -4346,6 +4374,7 @@ KW_OFFSET   = "OFFSET"i     !ident_start { return 'OFFSET' }
 
 KW_ASC      = "ASC"i        !ident_start { return 'ASC'; }
 KW_DESC     = "DESC"i       !ident_start { return 'DESC'; }
+KW_DESCRIBE = "DESCRIBE"i   !ident_start { return 'DESCRIBE'; }
 
 KW_ALL      = "ALL"i        !ident_start { return 'ALL'; }
 KW_DISTINCT = "DISTINCT"i   !ident_start { return 'DISTINCT';}

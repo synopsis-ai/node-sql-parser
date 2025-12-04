@@ -284,7 +284,7 @@ export type create_table_definition = create_definition[];
 
 export type create_definition = create_column_definition | create_index_definition | create_fulltext_spatial_index_definition | create_constraint_definition;
 
-export type column_definition_opt = column_constraint | { auto_increment: 'auto_increment'; } | { unique: 'unique' | 'unique key'; } | { unique: 'key' | 'primary key'; } | { comment: keyword_comment; } | { collate: collate_expr; } | { column_format: column_format; } | { storage: storage } | { reference_definition: reference_definition; } | { check: check_constraint_definition; } | { character_set: { type: 'CHARACTER SET'; symbol: '=' | null; value: ident_without_kw_type; } };
+export type column_definition_opt = column_constraint | { auto_increment: 'auto_increment'; } | { unique: 'unique' | 'unique key'; } | { unique: 'key' | 'primary key'; } | { comment: keyword_comment; } | { generated_by_default: { type: 'origin', value: string } } | { collate: collate_expr; } | { column_format: column_format; } | { storage: storage } | { reference_definition: reference_definition; } | { check: check_constraint_definition; } | { character_set: { type: 'CHARACTER SET'; symbol: '=' | null; value: ident_without_kw_type; } };
 
 
 
@@ -295,10 +295,13 @@ export type column_definition_opt_list = {
         unique?: 'unique' | 'unique key';
         primary?: 'key' | 'primary key';
         comment?: keyword_comment;
+        generated_by_default?: { type: 'origin', value: string };
         collate?: collate_expr;
         column_format?: column_format;
         storage?: storage;
         reference_definition?: reference_definition;
+        check?: check_constraint_definition;
+        character_set?: { type: 'CHARACTER SET'; symbol: '=' | null; value: ident_without_kw_type; };
       };
 
 export type create_column_definition_list = create_column_definition[];
@@ -314,10 +317,13 @@ export type create_column_definition = {
         unique?: 'unique' | 'unique key';
         primary?: 'key' | 'primary key';
         comment?: keyword_comment;
+        generated_by_default?: { type: 'origin', value: string };
         collate?: collate_expr;
         column_format?: column_format;
         storage?: storage;
         reference_definition?: reference_definition;
+        check?: check_constraint_definition;
+        character_set?: { type: 'CHARACTER SET'; symbol: '=' | null; value: ident_without_kw_type; };
         resource: 'column';
       };
 
@@ -1130,7 +1136,7 @@ export type set_item = { column: ident; value: additive_expr; table?: ident;} | 
 
 export type returning_stmt = { type: 'returning'; columns: column_clause | select_stmt; };
 
-export type insert_value_clause = value_clause | select_stmt_nake;
+export type insert_value_clause = value_clause | union_stmt_node;
 
 export type insert_partition = ident_name[] | value_item;
 
@@ -1719,6 +1725,8 @@ type KW_SMALLINT = never;
 
 type KW_SERIAL = never;
 
+type KW_SMALLSERIAL = never;
+
 type KW_TINYINT = never;
 
 type KW_TINYTEXT = never;
@@ -1792,6 +1800,10 @@ type KW_INET = never;
 type KW_MACADDR = never;
 
 type KW_MACADDR8 = never;
+
+type KW_BIT = never;
+
+type KW_MONEY = never;
 
 type KW_CURRENT_DATE = never;
 
@@ -2026,6 +2038,10 @@ export type numeric_type = data_type;
 
 
 
+export type money_type = data_type;
+
+
+
 export type oid_type = data_type;
 
 export type timezone = string[];;
@@ -2071,5 +2087,9 @@ export type record_type = data_type;
 
 
 export type network_address_type = data_type;
+
+
+
+export type bit_type = data_type;
 
 export type custom_types = data_type;
