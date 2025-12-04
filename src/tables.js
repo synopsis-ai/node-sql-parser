@@ -3,7 +3,28 @@ import { columnRefToSQL } from './column'
 import { exprToSQL } from './expr'
 import { valuesToSQL } from './insert'
 import { intervalToSQL } from './interval'
-import { commonOptionConnector, commonTypeValue, hasVal, identifierToSql, literalToSQL, toUpper } from './util'
+import { commonOptionConnector, commonTypeValue, getParserOpt, hasVal, identifierToSql, literalToSQL, toUpper } from './util'
+
+const NOT_FOUND = -1
+
+function formatTableAlias(aliasValue) {
+  if (!aliasValue) return ''
+  const { database } = getParserOpt()
+  const typeCase = database && database.toLowerCase()
+  if (typeCase !== 'trino') return commonOptionConnector('AS', typeof aliasValue === 'string' ? identifierToSql : exprToSQL, aliasValue)
+  const aliasText = typeof aliasValue === 'string' ? aliasValue : exprToSQL(aliasValue)
+  if (!aliasText) return ''
+  const openParenIndex = aliasText.indexOf('(')
+  const closeParenIndex = aliasText.lastIndexOf(')')
+  if (openParenIndex === NOT_FOUND || closeParenIndex === NOT_FOUND || closeParenIndex < openParenIndex) {
+    return commonOptionConnector('AS', identifierToSql, aliasText)
+  }
+  const aliasName = aliasText.slice(0, openParenIndex).trim()
+  const columnsPart = aliasText.slice(openParenIndex + 1, closeParenIndex).trim()
+  const columns = columnsPart.length ? columnsPart.split(/\s*,\s*/) : []
+  const formattedColumns = columns.join(', ')
+  return `AS ${aliasName}(${formattedColumns})`
+}
 
 function unnestToSQL(unnestExpr) {
   const { type, as, expr, with_offset: withOffset } = unnestExpr
@@ -147,7 +168,7 @@ function tableToSQL(tableInfo) {
     const tableSampleSQL = ['TABLESAMPLE', exprToSQL(tablesample.expr), literalToSQL(tablesample.repeatable)].filter(hasVal).join(' ')
     result.push(tableSampleSQL)
   }
-  result.push(temporalTableToSQL(temporal_table), commonOptionConnector('AS', typeof as === 'string' ? identifierToSql : exprToSQL, as), operatorToSQL(operator))
+  result.push(temporalTableToSQL(temporal_table), formatTableAlias(as), operatorToSQL(operator))
   if (table_hint) result.push(toUpper(table_hint.keyword), `(${table_hint.expr.map(tableHintToSQL).filter(hasVal).join(', ')})`)
   const tableSQL = result.filter(hasVal).join(' ')
   return tableInfo.parentheses ? `(${tableSQL})` : tableSQL

@@ -24,7 +24,7 @@ describe('trino', () => {
                 (ARRAY[3, 4]),
                 (ARRAY[5, 6, 7])
         ) AS t(numbers);`,
-        'SELECT numbers, transform(numbers, n -> n * n) AS "squared_numbers" FROM (VALUES (ARRAY[1,2]), (ARRAY[3,4]), (ARRAY[5,6,7])) AS "t(numbers)"'
+        'SELECT numbers, transform(numbers, n -> n * n) AS "squared_numbers" FROM (VALUES (ARRAY[1,2]), (ARRAY[3,4]), (ARRAY[5,6,7])) AS t(numbers)'
       ]
     },
     {
@@ -34,7 +34,7 @@ describe('trino', () => {
         FROM (
             VALUES (1), (2), (3), (4), (5)
         ) AS t(value);`,
-        'SELECT reduce_agg(value, 0, (a, b) -> a + b, (a, b) -> a + b) AS "sum_values" FROM (VALUES (1), (2), (3), (4), (5)) AS "t(value)"'
+        'SELECT reduce_agg(value, 0, (a, b) -> a + b, (a, b) -> a + b) AS "sum_values" FROM (VALUES (1), (2), (3), (4), (5)) AS t(value)'
       ]
     },
     {
@@ -48,7 +48,42 @@ describe('trino', () => {
                 (ARRAY[100,200,300])
         ) AS t(numbers)
         WHERE any_match(numbers, n ->  COALESCE(n, 0) > 100);`,
-        'SELECT numbers FROM (VALUES (ARRAY[1,NULL,3]), (ARRAY[10,20,30]), (ARRAY[100,200,300])) AS "t(numbers)" WHERE any_match(numbers, n -> COALESCE(n, 0) > 100)'
+        'SELECT numbers FROM (VALUES (ARRAY[1,NULL,3]), (ARRAY[10,20,30]), (ARRAY[100,200,300])) AS t(numbers) WHERE any_match(numbers, n -> COALESCE(n, 0) > 100)'
+      ]
+    },
+    {
+      title: 'values clause with table alias and column list',
+      sql: [
+        'SELECT num FROM (VALUES (1), (2), (3), (4), (5), (6), (7)) AS t(num)',
+        'SELECT num FROM (VALUES (1), (2), (3), (4), (5), (6), (7)) AS t(num)'
+      ]
+    },
+    {
+      title: 'values clause with table alias and column list with spacing',
+      sql: [
+        'SELECT num FROM (VALUES (1), (2), (3), (4), (5), (6), (7)) AS t (num)',
+        'SELECT num FROM (VALUES (1), (2), (3), (4), (5), (6), (7)) AS t(num)'
+      ]
+    },
+    {
+      title: 'values clause with table alias and multi column list',
+      sql: [
+        `SELECT num FROM (VALUES (1, 'a'), (2, 'a'), (3, 'a'), (4, 'a'), (5, 'a'), (6, 'a'), (7, 'a')) AS t(num,text)`,
+        `SELECT num FROM (VALUES (1,'a'), (2,'a'), (3,'a'), (4,'a'), (5,'a'), (6,'a'), (7,'a')) AS t(num, text)`
+      ]
+    },
+    {
+      title: 'values clause with table alias and multi column list with spacing',
+      sql: [
+        `SELECT num FROM (VALUES (1, 'a'), (2, 'a'), (3, 'a'), (4, 'a'), (5, 'a'), (6, 'a'), (7, 'a')) AS t (num, text)`,
+        `SELECT num FROM (VALUES (1,'a'), (2,'a'), (3,'a'), (4,'a'), (5,'a'), (6,'a'), (7,'a')) AS t(num, text)`
+      ]
+    },
+    {
+      title: 'values clause with multi column aliases',
+      sql: [
+        `SELECT col1, col2 FROM (VALUES (1, 'a'), (2, 'b')) AS dataset(col1, col2)`,
+        `SELECT col1, col2 FROM (VALUES (1,'a'), (2,'b')) AS dataset(col1, col2)`
       ]
     },
     {
@@ -63,7 +98,7 @@ describe('trino', () => {
                 (ARRAY[1, 2], 10, 5),
                 (ARRAY[3, 4], 4, 2)
         ) AS t(xvalues, a, b);`,
-        'SELECT xvalues, "a", b, transform(xvalues, x -> IF(x > 0, a * x + b, a * (-x) + b)) AS "linear_function_values" FROM (VALUES (ARRAY[1,2],10,5), (ARRAY[3,4],4,2)) AS "t(xvalues, a, b)"'
+        'SELECT xvalues, "a", b, transform(xvalues, x -> IF(x > 0, a * x + b, a * (-x) + b)) AS "linear_function_values" FROM (VALUES (ARRAY[1,2],10,5), (ARRAY[3,4],4,2)) AS t(xvalues, a, b)'
       ]
     },
     {
@@ -113,6 +148,126 @@ describe('trino', () => {
       title: "DESCRIBE statement with fully qualified name",
       sql: ['DESCRIBE my_catalog.my_schema.my_table', 'DESCRIBE "my_catalog"."my_schema"."my_table"'],
     },
+    {
+      title: 'array_agg function',
+      sql: [
+        'SELECT array_agg(col) FROM t',
+        'SELECT ARRAY_AGG(col) FROM "t"'
+      ]
+    },
+    {
+      title: 'array_agg with ORDER BY',
+      sql: [
+        'SELECT array_agg(col ORDER BY col DESC) FROM t',
+        'SELECT ARRAY_AGG(col ORDER BY col DESC) FROM "t"'
+      ]
+    },
+    {
+      title: 'string_agg function',
+      sql: [
+        "SELECT string_agg(col, ',') FROM t",
+        "SELECT STRING_AGG(col, ',') FROM \"t\""
+      ]
+    },
+    {
+      title: 'string_agg with ORDER BY',
+      sql: [
+        "SELECT string_agg(col, ',' ORDER BY col) FROM t",
+        "SELECT STRING_AGG(col, ',' ORDER BY col ASC) FROM \"t\""
+      ]
+    },
+    {
+      title: 'aggregate with FILTER clause',
+      sql: [
+        'SELECT COUNT(*) FILTER (WHERE status = 1) FROM t',
+        "SELECT COUNT(*) FILTER (WHERE status = 1) FROM \"t\""
+      ]
+    },
+    {
+      title: 'aggregate with FILTER clause and alias',
+      sql: [
+        'SELECT SUM(amount) FILTER (WHERE category = \'A\') AS filtered_sum FROM orders',
+        "SELECT SUM(amount) FILTER (WHERE category = 'A') AS \"filtered_sum\" FROM \"orders\""
+      ]
+    },
+    {
+      title: 'multiple aggregates with FILTER clauses',
+      sql: [
+        "SELECT COUNT(*) FILTER (WHERE status = 'active') AS active_count, COUNT(*) FILTER (WHERE status = 'inactive') AS inactive_count FROM users",
+        "SELECT COUNT(*) FILTER (WHERE status = 'active') AS \"active_count\", COUNT(*) FILTER (WHERE status = 'inactive') AS \"inactive_count\" FROM \"users\""
+      ]
+    },
+    {
+      title: 'PARTITION BY with expression',
+      sql: [
+        'SELECT SUM(a) OVER (PARTITION BY b + c) FROM t',
+        'SELECT SUM(a) OVER (PARTITION BY b + c) FROM "t"'
+      ]
+    },
+    {
+      title: 'PARTITION BY with function call',
+      sql: [
+        'SELECT ROW_NUMBER() OVER (PARTITION BY DATE_TRUNC(\'month\', created_at) ORDER BY id) FROM t',
+        "SELECT ROW_NUMBER() OVER (PARTITION BY DATE_TRUNC('month', created_at) ORDER BY id ASC) FROM \"t\""
+      ]
+    },
+    {
+      title: 'PARTITION BY with multiple expressions',
+      sql: [
+        'SELECT SUM(amount) OVER (PARTITION BY category, YEAR(date) ORDER BY date) FROM sales',
+        'SELECT SUM(amount) OVER (PARTITION BY category, YEAR(date) ORDER BY date ASC) FROM "sales"'
+      ]
+    },
+    {
+      title: 'PARTITION BY with CASE expression',
+      sql: [
+        "SELECT AVG(value) OVER (PARTITION BY CASE WHEN type = 'A' THEN 1 ELSE 2 END) FROM t",
+        "SELECT AVG(value) OVER (PARTITION BY CASE WHEN type = 'A' THEN 1 ELSE 2 END) FROM \"t\""
+      ]
+    },
+    {
+      title: 'unquoted simple identifiers',
+      sql: [
+        'SELECT column_name FROM table_name WHERE id = 1',
+        'SELECT column_name FROM "table_name" WHERE id = 1'
+      ]
+    },
+    {
+      title: 'unquoted identifiers with alias',
+      sql: [
+        'SELECT a AS alias_name FROM my_table',
+        'SELECT a AS "alias_name" FROM "my_table"'
+      ]
+    },
+    {
+      title: 'unquoted schema qualified table',
+      sql: [
+        'SELECT * FROM my_schema.my_table',
+        'SELECT * FROM "my_schema"."my_table"'
+      ]
+    },
+    {
+      title: 'quoted identifier with spaces is preserved',
+      sql: [
+        'SELECT 1 AS "Quiz Attempts 8 1"',
+        'SELECT 1 AS "Quiz Attempts 8 1"'
+      ]
+    },
+    {
+      title: 'quoted table name with reserved keyword is preserved',
+      sql: [
+        'SELECT * FROM "select"',
+        'SELECT * FROM "select"'
+      ]
+    },
+    {
+      title: 'quoted mixed-case table name is preserved',
+      sql: [
+        'SELECT * FROM "CamelCase"',
+        'SELECT * FROM "CamelCase"'
+      ]
+    }
+
   ];
   SQL_LIST.forEach((sqlInfo) => {
     const { title, sql } = sqlInfo;

@@ -114,7 +114,9 @@
     current_user: true,
     user: true,
     session_user: true,
-    system_user: true
+    system_user: true,
+    array_agg: true,
+    string_agg: true
   }
 
   function getLocationObject() {
@@ -2685,7 +2687,10 @@ window_frame_value
   / literal_numeric
 
 partition_by_clause
-  = KW_PARTITION __ KW_BY __ bc:column_ref_list { return bc.map(item => ({ type: 'expr', expr: item })) }
+  = KW_PARTITION __ KW_BY __ head:expr tail:(__ COMMA __ expr)* {
+    const list = createList(head, tail);
+    return list.map(item => ({ type: 'expr', expr: item }));
+  }
 
 order_by_clause
   = KW_ORDER __ KW_BY __ l:order_by_list { /* => order_by_list */ return l; }
@@ -3786,7 +3791,7 @@ concat_separator
   = kw:COMMA __ s:literal_string {
     // => { symbol: ','; delimiter: literal_string; }
     return {
-      symbol: ke,
+      symbol: kw,
       delimiter: s
     }
   }

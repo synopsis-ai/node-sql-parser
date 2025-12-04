@@ -295,10 +295,13 @@ export type column_definition_opt_list = {
         unique?: 'unique' | 'unique key';
         primary?: 'key' | 'primary key';
         comment?: keyword_comment;
+        generated_by_default?: { type: 'origin', value: string };
         collate?: collate_expr;
         column_format?: column_format;
         storage?: storage;
         reference_definition?: reference_definition;
+        check?: check_constraint_definition;
+        character_set?: { type: 'CHARACTER SET'; symbol: '=' | null; value: ident_without_kw_type; };
       };
 
 export type create_column_definition_list = create_column_definition[];
@@ -314,10 +317,13 @@ export type create_column_definition = {
         unique?: 'unique' | 'unique key';
         primary?: 'key' | 'primary key';
         comment?: keyword_comment;
+        generated_by_default?: { type: 'origin', value: string };
         collate?: collate_expr;
         column_format?: column_format;
         storage?: storage;
         reference_definition?: reference_definition;
+        check?: check_constraint_definition;
+        character_set?: { type: 'CHARACTER SET'; symbol: '=' | null; value: ident_without_kw_type; };
         resource: 'column';
       };
 
