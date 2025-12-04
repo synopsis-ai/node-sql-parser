@@ -13,5 +13,7 @@
         "node_modules": true,
         "output": true,
         "package-lock.json": false
-    }
+    },
+    "eslint.useFlatConfig": false,
+    "editor.formatOnSave": false
 }
