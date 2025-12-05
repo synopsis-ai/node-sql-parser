@@ -1,6 +1,6 @@
 {
-  "name": "@synopsis-ai/node-sql-parser",
-  "version": "5.3.13-synopsis-1",
+  "name": "node-sql-parser",
+  "version": "5.3.13-synopsis-2",
   "description": "simple node sql parser",
   "main": "index.js",
   "types": "types.d.ts",
