@@ -1,3 +1,21 @@
+import {
+  anyValue,
+  assertPublic,
+  autoIncrementInput,
+  columnOrderListArg,
+  createValueExprInput,
+  eventList,
+  callbackSchema,
+  identNullable,
+  keywordString,
+  literalInput,
+  looseAst,
+  nonNullString,
+  optionalLooseObject,
+  parserOption,
+  paramsRecord,
+  topToSqlOpt,
+} from './api-validation'
 import { columnToSQL, columnRefToSQL, columnOrderToSQL } from './column'
 import { collateToSQL } from './collate'
 
@@ -26,11 +44,14 @@ let parserOpt = DEFAULT_OPT
 
 function commonOptionConnector(keyword, action, opt) {
   if (!opt) return
+  assertPublic('commonOptionConnector.action', callbackSchema, action)
   if (!keyword) return action(opt)
+  assertPublic('commonOptionConnector.keyword', keywordString, keyword)
   return `${keyword.toUpperCase()} ${action(opt)}`
 }
 
 function connector(keyword, str) {
+  assertPublic('connector.keyword', keywordString, keyword)
   if (!str) return
   return `${keyword.toUpperCase()} ${str}`
 }
@@ -40,6 +61,7 @@ function connector(keyword, str) {
  * @return {Object}
  */
 function createValueExpr(value) {
+  assertPublic('createValueExpr.value', createValueExprInput, value)
   const type = typeof value
   if (Array.isArray(value)) return { type: 'expr_list', value: value.map(createValueExpr) }
   if (value === null) return { type: 'null', value: null }
@@ -62,6 +84,9 @@ function createValueExpr(value) {
  * @return {Object}
  */
 function createBinaryExpr(operator, left, right) {
+  assertPublic('createBinaryExpr.operator', keywordString, operator)
+  assertPublic('createBinaryExpr.left', anyValue, left)
+  assertPublic('createBinaryExpr.right', anyValue, right)
   const expr = { operator, type: 'binary_expr' }
   expr.left = left.type ? left : createValueExpr(left)
   if (operator === 'BETWEEN' || operator === 'NOT BETWEEN') {
@@ -100,6 +125,7 @@ function replaceParamsInner(ast, keys) {
 }
 
 function escape(str) {
+  assertPublic('escape.str', nonNullString, str)
   return str
   // const res = []
   // for (let i = 0, len = str.length; i < len; ++i) {
@@ -116,10 +142,12 @@ function getParserOpt() {
 }
 
 function setParserOpt(opt) {
+  assertPublic('setParserOpt.opt', parserOption, opt)
   parserOpt = opt
 }
 
 function topToSQL(opt) {
+  assertPublic('topToSQL.opt', topToSqlOpt, opt)
   if (!opt) return
   const { value, percent, parentheses } = opt
   const val = parentheses ? `(${value})` : value
@@ -129,6 +157,7 @@ function topToSQL(opt) {
 }
 
 function columnIdentifierToSql(ident) {
+  assertPublic('columnIdentifierToSql.ident', identNullable, ident)
   const { database } = getParserOpt()
   if (!ident) return
   switch (database && database.toLowerCase()) {
@@ -152,6 +181,9 @@ function columnIdentifierToSql(ident) {
 }
 
 function identifierToSql(ident, isDual, surround) {
+  assertPublic('identifierToSql.ident', anyValue, ident)
+  assertPublic('identifierToSql.isDual', anyValue, isDual)
+  assertPublic('identifierToSql.surround', anyValue, surround)
   if (isDual === true) return `'${ident}'`
   if (!ident) return
   if (ident === '*') return ident
@@ -185,11 +217,13 @@ function toUpper(val) {
 }
 
 function hasVal(val) {
+  assertPublic('hasVal', anyValue, val)
   return val
 }
 
 function literalToSQL(literal) {
   if (!literal) return
+  assertPublic('literalToSQL.literal', literalInput, literal)
   let { prefix } = literal
   const { type, parentheses, suffix, value } = literal
   let str = typeof literal === 'object' ? value : literal
@@ -269,15 +303,19 @@ function literalToSQL(literal) {
 
 function commonTypeValue(opt) {
   if (!opt) return []
+  assertPublic('commonTypeValue.opt', looseAst, opt)
   const { type, symbol, value } = opt
   return [type.toUpperCase(), symbol, typeof value === 'string' ? value.toUpperCase() : literalToSQL(value)].filter(hasVal)
 }
 
 function replaceParams(ast, params) {
+  assertPublic('replaceParams.ast', looseAst, ast)
+  assertPublic('replaceParams.params', paramsRecord, params)
   return replaceParamsInner(JSON.parse(JSON.stringify(ast)), params)
 }
 
 function onPartitionsToSQL(expr) {
+  assertPublic('onPartitionsToSQL.expr', looseAst, expr)
   const { type, partitions } = expr
   const result = [
     toUpper(type),
@@ -292,6 +330,7 @@ function onPartitionsToSQL(expr) {
 }
 
 function dataTypeToSQL(expr) {
+  assertPublic('dataTypeToSQL.expr', looseAst, expr)
   const { schema, dataType, length, parentheses, scale, suffix } = expr
   let str = ''
   if (length != null) str = scale ? `${length}, ${scale}` : length
@@ -302,6 +341,7 @@ function dataTypeToSQL(expr) {
 }
 
 function arrayStructTypeToSQL(expr) {
+  assertPublic('arrayStructTypeToSQL.expr', optionalLooseObject, expr)
   if (!expr) return
   const { dataType, definition, anglebracket } = expr
   const dataTypeUpper = toUpper(dataType)
@@ -319,6 +359,7 @@ function arrayStructTypeToSQL(expr) {
 
 function commentToSQL(comment) {
   if (!comment) return
+  assertPublic('commentToSQL.comment', looseAst, comment)
   const result = []
   const { keyword, symbol, value } = comment
   result.push(keyword.toUpperCase())
@@ -328,6 +369,7 @@ function commentToSQL(comment) {
 }
 
 function triggerEventToSQL(events) {
+  assertPublic('triggerEventToSQL.events', eventList, events)
   return events.map(event => {
     const { keyword: eventKw, args } = event
     const result = [toUpper(eventKw)]
@@ -341,6 +383,7 @@ function triggerEventToSQL(events) {
 
 function returningToSQL(returning) {
   if (!returning) return ''
+  assertPublic('returningToSQL.returning', looseAst, returning)
   const { columns } = returning
   return [
     'RETURNING',
@@ -350,10 +393,12 @@ function returningToSQL(returning) {
 
 function commonKeywordArgsToSQL(kwArgs) {
   if (!kwArgs) return []
+  assertPublic('commonKeywordArgsToSQL.kwArgs', looseAst, kwArgs)
   return [toUpper(kwArgs.keyword), toUpper(kwArgs.args)]
 }
 
 function autoIncrementToSQL(autoIncrement) {
+  assertPublic('autoIncrementToSQL.autoIncrement', autoIncrementInput, autoIncrement)
   if (!autoIncrement) return
   if (typeof autoIncrement === 'string') {
     const { database } = getParserOpt()
@@ -371,6 +416,7 @@ function autoIncrementToSQL(autoIncrement) {
 }
 
 function columnOrderListToSQL(columnOrderList) {
+  assertPublic('columnOrderListToSQL.columnOrderList', columnOrderListArg, columnOrderList)
   if (!columnOrderList) return
   return columnOrderList.map(columnOrderToSQL).filter(hasVal).join(', ')
 }
