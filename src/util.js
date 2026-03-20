@@ -1,16 +1,13 @@
 import {
-  anyValue,
   assertPublic,
+  astSqlifyInput,
   autoIncrementInput,
   columnOrderListArg,
   createValueExprInput,
   eventList,
-  callbackSchema,
   identNullable,
   keywordString,
-  literalInput,
   looseAst,
-  nonNullString,
   optionalLooseObject,
   parserOption,
   paramsRecord,
@@ -44,14 +41,11 @@ let parserOpt = DEFAULT_OPT
 
 function commonOptionConnector(keyword, action, opt) {
   if (!opt) return
-  assertPublic('commonOptionConnector.action', callbackSchema, action)
   if (!keyword) return action(opt)
-  assertPublic('commonOptionConnector.keyword', keywordString, keyword)
   return `${keyword.toUpperCase()} ${action(opt)}`
 }
 
 function connector(keyword, str) {
-  assertPublic('connector.keyword', keywordString, keyword)
   if (!str) return
   return `${keyword.toUpperCase()} ${str}`
 }
@@ -85,11 +79,12 @@ function createValueExpr(value) {
  */
 function createBinaryExpr(operator, left, right) {
   assertPublic('createBinaryExpr.operator', keywordString, operator)
-  assertPublic('createBinaryExpr.left', anyValue, left)
-  assertPublic('createBinaryExpr.right', anyValue, right)
   const expr = { operator, type: 'binary_expr' }
   expr.left = left.type ? left : createValueExpr(left)
   if (operator === 'BETWEEN' || operator === 'NOT BETWEEN') {
+    if (!Array.isArray(right) || right.length !== 2) {
+      throw new TypeError('node-sql-parser: invalid createBinaryExpr.right: expected a 2-item array for BETWEEN')
+    }
     expr.right = {
       type  : 'expr_list',
       value : [createValueExpr(right[0]), createValueExpr(right[1])],
@@ -125,7 +120,6 @@ function replaceParamsInner(ast, keys) {
 }
 
 function escape(str) {
-  assertPublic('escape.str', nonNullString, str)
   return str
   // const res = []
   // for (let i = 0, len = str.length; i < len; ++i) {
@@ -181,9 +175,6 @@ function columnIdentifierToSql(ident) {
 }
 
 function identifierToSql(ident, isDual, surround) {
-  assertPublic('identifierToSql.ident', anyValue, ident)
-  assertPublic('identifierToSql.isDual', anyValue, isDual)
-  assertPublic('identifierToSql.surround', anyValue, surround)
   if (isDual === true) return `'${ident}'`
   if (!ident) return
   if (ident === '*') return ident
@@ -217,13 +208,11 @@ function toUpper(val) {
 }
 
 function hasVal(val) {
-  assertPublic('hasVal', anyValue, val)
   return val
 }
 
 function literalToSQL(literal) {
   if (!literal) return
-  assertPublic('literalToSQL.literal', literalInput, literal)
   let { prefix } = literal
   const { type, parentheses, suffix, value } = literal
   let str = typeof literal === 'object' ? value : literal
@@ -309,7 +298,7 @@ function commonTypeValue(opt) {
 }
 
 function replaceParams(ast, params) {
-  assertPublic('replaceParams.ast', looseAst, ast)
+  assertPublic('replaceParams.ast', astSqlifyInput, ast)
   assertPublic('replaceParams.params', paramsRecord, params)
   return replaceParamsInner(JSON.parse(JSON.stringify(ast)), params)
 }

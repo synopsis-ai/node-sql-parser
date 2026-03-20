@@ -53,44 +53,30 @@ export const createValueExprInput = z.union([
   z.string(),
   z.number(),
   z.null(),
-  z.looseObject({}),
 ])
 
 /** Table/column identifier fragment (nullable / optional). */
 export const identNullable = z.union([z.string(), z.null(), z.undefined()])
 
-export const nonNullString = z.string()
-
 export const keywordString = z.string()
 
-export const callbackSchema = z.custom(
-  value => typeof value === 'function',
-  { message: 'expected function' },
-)
-
-export const anyValue = z.unknown()
-
-export const topToSqlOpt = z.looseObject({}).optional().nullable()
+export const topToSqlOpt = z.object({
+  value       : z.union([z.string(), z.number()]),
+  percent     : z.string().optional().nullable(),
+  parentheses : z.boolean().optional().nullable(),
+}).passthrough().optional().nullable()
 
 export const paramsRecord = z.record(z.string(), z.unknown())
 
 export const looseAst = z.looseObject({})
 
-/** AST literal nodes are usually objects; some call sites pass primitives or arrays. */
-export const literalInput = z.union([
-  z.looseObject({}),
-  z.array(z.unknown()),
-  z.string(),
-  z.number(),
-  z.bigint(),
-  z.boolean(),
-])
-
 export const optionalLooseObject = z.looseObject({}).optional().nullable()
 
-export const eventList = z.array(z.unknown())
+export const eventList = z.array(z.looseObject({
+  keyword : z.string(),
+}))
 
-export const columnOrderList = z.array(z.unknown())
+export const columnOrderList = z.array(z.looseObject({}))
 
 export const columnOrderListArg = z.union([columnOrderList, z.null(), z.undefined()])
 
