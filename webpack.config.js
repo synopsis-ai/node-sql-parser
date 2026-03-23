@@ -22,7 +22,7 @@ const moduleCfg = {
             exclude: /(node_modules|bower_components)/,
             use: isCoverage
                 ? {
-                    loader: 'istanbul-instrumenter-loader',
+                    loader: '@jsdevtools/coverage-istanbul-loader',
                     options: { esModules: true },
                 }
                 : {

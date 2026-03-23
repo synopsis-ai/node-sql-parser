@@ -2,6 +2,16 @@ import { columnToSQL, getDual } from './column'
 import { exprToSQL } from './expr'
 import parsers from './parser.all'
 import astToSQL from './sql'
+import {
+  assertPublic,
+  astSqlifyInput,
+  columnsToSqlColumns,
+  exprSqlifyInput,
+  parserOption,
+  sqlString,
+  tablesArg,
+  whiteListArg,
+} from './api-validation'
 import { DEFAULT_OPT, setParserOpt } from './util'
 
 class Parser {
@@ -11,16 +21,23 @@ class Parser {
   }
 
   sqlify(ast, opt = DEFAULT_OPT) {
+    assertPublic('ast', astSqlifyInput, ast)
+    assertPublic('opt', parserOption, opt)
     setParserOpt(opt)
     return astToSQL(ast, opt)
   }
 
   exprToSQL(expr, opt = DEFAULT_OPT) {
+    assertPublic('expr', exprSqlifyInput, expr)
+    assertPublic('opt', parserOption, opt)
     setParserOpt(opt)
     return exprToSQL(expr)
   }
 
   columnsToSQL(columns, tables, opt = DEFAULT_OPT) {
+    assertPublic('columns', columnsToSqlColumns, columns)
+    assertPublic('tables', tablesArg, tables)
+    assertPublic('opt', parserOption, opt)
     setParserOpt(opt)
     if (!columns || columns === '*') return []
     const isDual = getDual(tables)
@@ -28,6 +45,8 @@ class Parser {
   }
 
   parse(sql, opt = DEFAULT_OPT) {
+    assertPublic('sql', sqlString, sql)
+    assertPublic('opt', parserOption, opt)
     const { database = (PARSER_NAME || 'mysql') } = opt
     setParserOpt(opt)
     const typeCase = database.toLowerCase()
@@ -36,6 +55,9 @@ class Parser {
   }
 
   whiteListCheck(sql, whiteList, opt = DEFAULT_OPT) {
+    assertPublic('sql', sqlString, sql)
+    assertPublic('whiteList', whiteListArg, whiteList)
+    assertPublic('opt', parserOption, opt)
     if (!whiteList || whiteList.length === 0) return
     const { type = 'table' } = opt
     if (!this[`${type}List`] || typeof this[`${type}List`] !== 'function') throw new Error(`${type} is not valid check mode`)
