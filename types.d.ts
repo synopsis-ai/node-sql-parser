@@ -223,13 +223,13 @@ export type ExpressionValue =
   | Cast
   | Interval;
 
-export type ExprList = {
+export interface ExprList {
   type: "expr_list";
-  value: ExpressionValue[];
+  value: Array<ExpressionValue | ExprList>;
   loc?: LocationRange;
   parentheses?: boolean;
   separator?: string;
-};
+}
 
 export type PartitionBy = {
   type: 'expr';
@@ -263,7 +263,7 @@ export interface Select {
   columns: any[] | Column[];
   from: From[] | TableExpr | null ;
   where: Binary | Function | null;
-  groupby: { columns: ColumnRef[] | null, modifiers: ValueExpr<string>[] };
+  groupby: { columns: ExpressionValue[] | null, modifiers: ValueExpr<string>[] };
   having: any[] | null;
   orderby: OrderBy[] | null;
   limit: Limit | null;

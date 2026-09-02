@@ -3863,11 +3863,49 @@ where_clause
   = KW_WHERE __ e:or_and_where_expr { /* => or_and_where_expr */ return e; }
 
 group_by_clause
-  = KW_GROUP __ KW_BY __ e:expr_list {
-    // => { columns: expr_list['value']; modifiers: literal_string[]; }
+  = KW_GROUP __ KW_BY __ e:group_by_element_list {
+    // => { columns: group_by_element_list; modifiers: literal_string[]; }
     return {
-      columns: e.value
+      columns: e
     }
+  }
+
+group_by_element_list
+  = head:group_by_element tail:(__ COMMA __ group_by_element)* {
+    // => group_by_element[]
+    return createList(head, tail);
+  }
+
+group_by_element
+  = grouping_sets
+  / expr
+
+grouping_sets
+  = KW_GROUPING __ KW_SETS __ LPAREN __ sets:grouping_set_list __ RPAREN {
+    // => { type: 'function'; name: proc_func_name; args: grouping_set_list; }
+    return {
+      type: 'function',
+      name: { name: [{ type: 'origin', value: 'grouping sets' }] },
+      args: sets,
+      ...getLocationObject(),
+    }
+  }
+
+grouping_set_list
+  = head:grouping_set tail:(__ COMMA __ grouping_set)* {
+    // => { type: 'expr_list'; value: grouping_set[]; }
+    return {
+      type: 'expr_list',
+      value: createList(head, tail),
+    }
+  }
+
+grouping_set
+  = LPAREN __ e:expr_list? __ RPAREN {
+    // => expr_list & { parentheses: true; }
+    const groupingSet = e || { type: 'expr_list', value: [] }
+    groupingSet.parentheses = true
+    return groupingSet
   }
 
 column_ref_list
@@ -5719,6 +5757,8 @@ KW_WHERE    = "WHERE"i      !ident_start
 KW_WITH     = "WITH"i       !ident_start
 
 KW_GROUP    = "GROUP"i      !ident_start
+KW_GROUPING = "GROUPING"i   !ident_start
+KW_SETS     = "SETS"i       !ident_start
 KW_BY       = "BY"i         !ident_start
 KW_ORDER    = "ORDER"i      !ident_start
 KW_HAVING   = "HAVING"i     !ident_start
