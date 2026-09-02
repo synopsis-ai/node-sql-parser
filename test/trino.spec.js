@@ -158,6 +158,11 @@ describe('trino', () => {
         sql: 'SELECT a, b FROM x GROUP BY a, b',
         expected: 'SELECT a, b FROM "x" GROUP BY a, b',
       },
+      {
+        title: 'the empty grouping element',
+        sql: 'SELECT COUNT(*) FROM x GROUP BY ()',
+        expected: 'SELECT COUNT(*) FROM "x" GROUP BY ()',
+      },
     ]
 
     cases.forEach(({ title, sql, expected }) => {

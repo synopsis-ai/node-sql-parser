@@ -263,7 +263,7 @@ export interface Select {
   columns: any[] | Column[];
   from: From[] | TableExpr | null ;
   where: Binary | Function | null;
-  groupby: { columns: ExpressionValue[] | null, modifiers: ValueExpr<string>[] };
+  groupby: { columns: Array<ExpressionValue | ExprList> | null, modifiers: ValueExpr<string>[] };
   having: any[] | null;
   orderby: OrderBy[] | null;
   limit: Limit | null;

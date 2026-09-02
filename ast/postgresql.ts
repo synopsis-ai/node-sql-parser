@@ -1076,7 +1076,7 @@ export type group_by_clause = { columns: group_by_element_list; modifiers: liter
 
 export type group_by_element_list = group_by_element[];
 
-export type group_by_element = grouping_sets | expr;
+export type group_by_element = grouping_sets | expr | grouping_set;
 
 export type grouping_sets = { type: 'function'; name: proc_func_name; args: grouping_set_list; };
 

@@ -3879,6 +3879,9 @@ group_by_element_list
 group_by_element
   = grouping_sets
   / expr
+  // `expr` is tried first so that `(a)` and `(a, b)` keep their existing shapes;
+  // only the empty grouping element `()` falls through to `grouping_set`.
+  / grouping_set
 
 grouping_sets
   = KW_GROUPING __ KW_SETS __ LPAREN __ sets:grouping_set_list __ RPAREN {
