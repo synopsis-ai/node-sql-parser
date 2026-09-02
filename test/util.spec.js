@@ -15,7 +15,7 @@ describe('util function test', () => {
   const parser = new Parser()
 
   it('should throw error when type is unkonwn', () => {
-    expect(createValueExpr.bind(null, {})).to.throw('Cannot convert value "object" to SQL')
+    expect(createValueExpr.bind(null, {})).to.throw('node-sql-parser: invalid createValueExpr.value')
   })
 
   it('should sqlify when right do not has type', () => {

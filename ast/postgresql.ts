@@ -295,13 +295,10 @@ export type column_definition_opt_list = {
         unique?: 'unique' | 'unique key';
         primary?: 'key' | 'primary key';
         comment?: keyword_comment;
-        generated_by_default?: { type: 'origin', value: string };
         collate?: collate_expr;
         column_format?: column_format;
         storage?: storage;
         reference_definition?: reference_definition;
-        check?: check_constraint_definition;
-        character_set?: { type: 'CHARACTER SET'; symbol: '=' | null; value: ident_without_kw_type; };
       };
 
 export type create_column_definition_list = create_column_definition[];
@@ -317,13 +314,10 @@ export type create_column_definition = {
         unique?: 'unique' | 'unique key';
         primary?: 'key' | 'primary key';
         comment?: keyword_comment;
-        generated_by_default?: { type: 'origin', value: string };
         collate?: collate_expr;
         column_format?: column_format;
         storage?: storage;
         reference_definition?: reference_definition;
-        check?: check_constraint_definition;
-        character_set?: { type: 'CHARACTER SET'; symbol: '=' | null; value: ident_without_kw_type; };
         resource: 'column';
       };
 
@@ -454,7 +448,7 @@ export type alter_table_stmt = AstStatement<alter_table_stmt_node>;
 
 export type alter_action_list = alter_action[];
 
-export type alter_action = ALTER_ADD_COLUMN | ALTER_ADD_CONSTRAINT | ALTER_DROP_COLUMN | ALTER_ADD_INDEX_OR_KEY | ALTER_ADD_FULLETXT_SPARITAL_INDEX | ALTER_RENAME | ALTER_ALGORITHM | ALTER_LOCK | ALTER_OWNER_TO | ALTER_COLUMN_DATA_TYPE | ALTER_COLUMN_DEFAULT | ALTER_COLUMN_NOT_NULL;
+export type alter_action = ALTER_ADD_COLUMN | ALTER_ADD_CONSTRAINT | ALTER_DROP_CONSTRAINT | ALTER_DROP_COLUMN | ALTER_ADD_INDEX_OR_KEY | ALTER_ADD_FULLETXT_SPARITAL_INDEX | ALTER_RENAME | ALTER_ALGORITHM | ALTER_LOCK | ALTER_OWNER_TO | ALTER_COLUMN_DATA_TYPE | ALTER_COLUMN_DEFAULT | ALTER_COLUMN_NOT_NULL | ALTER_REPLICA_IDENTITY;
 
 
 
@@ -483,6 +477,16 @@ export type ALTER_ADD_CONSTRAINT = {
         action: 'add';
         create_definitions: create_db_definition;
         resource: 'constraint';
+        type: 'alter';
+      };
+
+
+
+export type ALTER_DROP_CONSTRAINT = {
+        action: 'drop';
+        constraint: ident,
+        keyword: 'constraint',
+        resource: 'constraint',
         type: 'alter';
       };
 
@@ -555,6 +559,16 @@ export type ALTER_COLUMN_NOT_NULL = {
         nullable: literal_not_null;
         type: 'alter';
       } & create_column_definition;;
+
+
+
+export type ALTER_REPLICA_IDENTITY = {
+        action: 'replica';
+        keyword?: 'identity';
+        resource: 'replica_identity';
+        type: 'alter';
+        replica_identity: 'default' | 'full' | 'nothing';
+      };
 
 
 
@@ -1058,7 +1072,17 @@ export type on_clause = or_and_where_expr;
 
 export type where_clause = or_and_where_expr;
 
-export type group_by_clause = { columns: expr_list['value']; modifiers: literal_string[]; };
+export type group_by_clause = { columns: group_by_element_list; modifiers: literal_string[]; };
+
+export type group_by_element_list = group_by_element[];
+
+export type group_by_element = grouping_sets | expr | grouping_set;
+
+export type grouping_sets = { type: 'function'; name: proc_func_name; args: grouping_set_list; };
+
+export type grouping_set_list = { type: 'expr_list'; value: grouping_set[]; };
+
+export type grouping_set = expr_list & { parentheses: true; };
 
 export type column_ref_list = column_ref[];
 
@@ -1618,6 +1642,10 @@ type KW_WHERE = never;
 type KW_WITH = never;
 
 type KW_GROUP = never;
+
+type KW_GROUPING = never;
+
+type KW_SETS = never;
 
 type KW_BY = never;
 

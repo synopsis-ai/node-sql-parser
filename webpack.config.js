@@ -4,6 +4,7 @@ const fs = require('fs')
 const path = require('path')
 const webpack = require('webpack')
 const nodeExternals = require('webpack-node-externals')
+const TerserPlugin = require('terser-webpack-plugin')
 
 const isCoverage = process.env.NODE_ENV === 'coverage'
 const isProd = process.argv.includes('production')
@@ -22,7 +23,7 @@ const moduleCfg = {
             exclude: /(node_modules|bower_components)/,
             use: isCoverage
                 ? {
-                    loader: 'istanbul-instrumenter-loader',
+                    loader: '@jsdevtools/coverage-istanbul-loader',
                     options: { esModules: true },
                 }
                 : {
@@ -32,6 +33,19 @@ const moduleCfg = {
                     }
                 },
             enforce: 'post',
+        },
+        {
+            // zod's CommonJS build uses ES2020 syntax (?. / ??) that webpack 4 can't
+            // parse. Down-level just the syntax (no module/polyfill transform) so the
+            // bundle stays parseable; the project .babelrc is intentionally skipped.
+            test: /\.cjs$/,
+            include: /node_modules[\\/]zod[\\/]/,
+            loader: 'babel-loader',
+            options: {
+                babelrc: false,
+                configFile: false,
+                presets: [['@babel/preset-env', { targets: { ie: '11' }, modules: false }]],
+            },
         },
         {
             test: /\.pegjs$/,
@@ -127,9 +141,19 @@ function buildConfig(parserName, target, entry, plugins) {
         mode: isProd ? 'production' : 'development',
         node: { __dirname: false },
         module: moduleCfg,
-        resolve: { extensions: ['.js', '.pegjs'] },
+        resolve: {
+            extensions: ['.js', '.pegjs'],
+            // zod's `module` entry is ESM using `export * as ns`, which webpack 4's
+            // parser can't handle and which babel-loader skips (node_modules excluded).
+            // Point the bare import at zod's self-contained CommonJS build instead.
+            alias: { zod$: require.resolve('zod') },
+        },
         plugins: getPlugins(parserName, target, plugins),
         output: getOutput(target),
+        // webpack 4 bundles terser-webpack-plugin@1, which targets the terser v4 API.
+        // The terser@5 security override breaks it (minified source becomes undefined),
+        // so use terser-webpack-plugin@4 which speaks the terser v5 API.
+        optimization: isProd ? { minimizer: [new TerserPlugin({ sourceMap: true })] } : undefined,
     }
 }
 

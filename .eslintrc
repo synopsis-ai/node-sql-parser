@@ -9,8 +9,7 @@
     "sourceType": "module"
   },
   "extends": [
-    "airbnb-base",
-    "strict"
+    "airbnb-base"
   ],
   "globals": {
     "PARSER_NAME": true
@@ -141,6 +140,9 @@
     "import/prefer-default-export": 0,
     "array-element-newline": 0,
     "no-process-env": 0,
-    "default-case": 0
+    "default-case": 0,
+    "object-curly-newline": 0,
+    "no-continue": 0,
+    "quote-props": 0
   }
 }

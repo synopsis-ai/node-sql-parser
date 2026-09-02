@@ -2565,10 +2565,47 @@ where_clause
   = KW_WHERE __ e:or_and_where_expr { /* => binary_expr */ return e; }
 
 group_by_clause
-  = KW_GROUP __ KW_BY __ e:expr_list {
+  = KW_GROUP __ KW_BY __ e:group_by_element_list {
     return {
-      columns: e.value
+      columns: e
     }
+  }
+
+group_by_element_list
+  = head:group_by_element tail:(__ COMMA __ group_by_element)* {
+    return createList(head, tail);
+  }
+
+group_by_element
+  = grouping_sets
+  / expr
+  // `expr` is tried first so that `(a)` and `(a, b)` keep their existing shapes;
+  // only the empty grouping element `()` falls through to `grouping_set`.
+  / grouping_set
+
+grouping_sets
+  = KW_GROUPING __ KW_SETS __ LPAREN __ sets:grouping_set_list __ RPAREN {
+    return {
+      type: 'function',
+      name: { name: [{ type: 'origin', value: 'grouping sets' }] },
+      args: sets,
+      ...getLocationObject(),
+    }
+  }
+
+grouping_set_list
+  = head:grouping_set tail:(__ COMMA __ grouping_set)* {
+    return {
+      type: 'expr_list',
+      value: createList(head, tail),
+    }
+  }
+
+grouping_set
+  = LPAREN __ e:expr_list? __ RPAREN {
+    const groupingSet = e || { type: 'expr_list', value: [] }
+    groupingSet.parentheses = true
+    return groupingSet
   }
 
 column_ref_list
@@ -4364,6 +4401,8 @@ KW_WHERE    = "WHERE"i      !ident_start
 KW_WITH     = "WITH"i       !ident_start
 
 KW_GROUP    = "GROUP"i      !ident_start
+KW_GROUPING = "GROUPING"i   !ident_start
+KW_SETS     = "SETS"i       !ident_start
 KW_BY       = "BY"i         !ident_start
 KW_ORDER    = "ORDER"i      !ident_start
 KW_HAVING   = "HAVING"i     !ident_start

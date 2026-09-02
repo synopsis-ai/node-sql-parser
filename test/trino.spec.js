@@ -275,6 +275,61 @@ describe('trino', () => {
       expect(getParsedSql(sql[0], opt)).to.equal(sql[1])
     })
   })
+
+  describe('grouping sets', () => {
+    const cases = [
+      {
+        title: 'the reported query',
+        sql: 'SELECT a, SUM(b) AS t FROM x GROUP BY GROUPING SETS ((a),()) ORDER BY t DESC',
+        expected: 'SELECT a, SUM(b) AS "t" FROM "x" GROUP BY GROUPING SETS((a), ()) ORDER BY t DESC',
+      },
+      {
+        title: 'multiple grouping sets including the empty set',
+        sql: 'SELECT a, b, SUM(c) AS total FROM x GROUP BY GROUPING SETS ((a, b), (a), ())',
+        expected: 'SELECT a, b, SUM(c) AS "total" FROM "x" GROUP BY GROUPING SETS((a, b), (a), ())',
+      },
+      {
+        title: 'a single grouping set',
+        sql: 'SELECT a FROM x GROUP BY GROUPING SETS ((a))',
+        expected: 'SELECT a FROM "x" GROUP BY GROUPING SETS((a))',
+      },
+      {
+        title: 'grouping with having, order by, and limit',
+        sql: 'SELECT GROUPING(a) AS g, a, SUM(b) AS t FROM x GROUP BY GROUPING SETS ((a), ()) HAVING SUM(b) > 1 ORDER BY GROUPING(a) DESC LIMIT 10',
+        expected: 'SELECT GROUPING(a) AS "g", a, SUM(b) AS "t" FROM "x" GROUP BY GROUPING SETS((a), ()) HAVING SUM(b) > 1 ORDER BY GROUPING(a) DESC LIMIT 10',
+      },
+      {
+        title: 'rollup',
+        sql: 'SELECT a, b FROM x GROUP BY ROLLUP (a, b)',
+        expected: 'SELECT a, b FROM "x" GROUP BY ROLLUP(a, b)',
+      },
+      {
+        title: 'cube',
+        sql: 'SELECT a, b FROM x GROUP BY CUBE (a, b)',
+        expected: 'SELECT a, b FROM "x" GROUP BY CUBE(a, b)',
+      },
+      {
+        title: 'plain grouping expressions',
+        sql: 'SELECT a, b FROM x GROUP BY a, b',
+        expected: 'SELECT a, b FROM "x" GROUP BY a, b',
+      },
+      {
+        title: 'the empty grouping element',
+        sql: 'SELECT COUNT(*) FROM x GROUP BY ()',
+        expected: 'SELECT COUNT(*) FROM "x" GROUP BY ()',
+      },
+    ]
+
+    cases.forEach(({ title, sql, expected }) => {
+      it(`should round-trip ${title}`, () => {
+        const ast = parser.astify(sql, opt)
+        const emitted = parser.sqlify(ast, opt)
+        expect(emitted).to.equal(expected)
+        expect(parser.astify(emitted, opt)).to.deep.equal(ast)
+      })
+    })
+  })
+
   it('should throw error when star column in additive expr', () => {
     const sql = 'SELECT abc FROM tableA WHERE u BETWEEN * - * - * - * - * and 10 LIMIT 10'
     expect(parser.astify.bind(parser, sql, { ...opt, parseOptions: { includeLocations: true }})).to.throw(JSON.stringify({
