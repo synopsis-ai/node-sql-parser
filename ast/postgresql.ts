@@ -1072,7 +1072,17 @@ export type on_clause = or_and_where_expr;
 
 export type where_clause = or_and_where_expr;
 
-export type group_by_clause = { columns: expr_list['value']; modifiers: literal_string[]; };
+export type group_by_clause = { columns: group_by_element_list; modifiers: literal_string[]; };
+
+export type group_by_element_list = group_by_element[];
+
+export type group_by_element = grouping_sets | expr | grouping_set;
+
+export type grouping_sets = { type: 'function'; name: proc_func_name; args: grouping_set_list; };
+
+export type grouping_set_list = { type: 'expr_list'; value: grouping_set[]; };
+
+export type grouping_set = expr_list & { parentheses: true; };
 
 export type column_ref_list = column_ref[];
 
@@ -1632,6 +1642,10 @@ type KW_WHERE = never;
 type KW_WITH = never;
 
 type KW_GROUP = never;
+
+type KW_GROUPING = never;
+
+type KW_SETS = never;
 
 type KW_BY = never;
 

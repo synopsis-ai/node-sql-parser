@@ -1962,6 +1962,22 @@ describe('Postgres', () => {
 
   neatlyNestTestedSQL(SQL_LIST)
 
+  it('should round-trip grouping sets', () => {
+    const sql = 'SELECT a, SUM(b) AS t FROM x GROUP BY GROUPING SETS ((a), ()) ORDER BY t DESC'
+    const ast = parser.astify(sql, opt)
+    const emitted = parser.sqlify(ast, opt)
+    expect(emitted).to.equal('SELECT a, SUM(b) AS "t" FROM "x" GROUP BY GROUPING SETS((a), ()) ORDER BY t DESC')
+    expect(parser.astify(emitted, opt)).to.deep.equal(ast)
+  })
+
+  it('should round-trip the empty grouping element', () => {
+    const sql = 'SELECT COUNT(*) FROM x GROUP BY ()'
+    const ast = parser.astify(sql, opt)
+    const emitted = parser.sqlify(ast, opt)
+    expect(emitted).to.equal('SELECT COUNT(*) FROM "x" GROUP BY ()')
+    expect(parser.astify(emitted, opt)).to.deep.equal(ast)
+  })
+
   describe('set time zone', () => {
     it('should support set time zone', () => {
       let sql = "SET TIME ZONE INTERVAL '00:00' HOUR TO MINUTE;"
