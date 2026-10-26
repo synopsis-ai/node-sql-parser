@@ -27,6 +27,7 @@
 
     'ELSE': true,
     'END': true,
+    'EXCEPT': true,
     'EXISTS': true,
     'EXPLAIN': true,
 
@@ -41,6 +42,7 @@
     'IN': true,
     'INNER': true,
     'INSERT': true,
+    'INTERSECT': true,
     'INTO': true,
     'IS': true,
 
@@ -310,6 +312,14 @@ set_op
   = KW_UNION __ a:KW_ALL? {
     // => 'union' | 'union all'
     return a ? 'union all' : 'union'
+  }
+  / KW_INTERSECT {
+    // => 'intersect'
+    return 'intersect'
+  }
+  / KW_EXCEPT {
+    // => 'except'
+    return 'except'
   }
 
 union_stmt
@@ -3227,7 +3237,7 @@ binary_column_expr
   }
 
 or_and_where_expr
-	= head:expr_item tail:(__ (KW_AND / KW_OR / COMMA) __ expr_item)* {
+	= head:expr tail:(__ (KW_AND / KW_OR / COMMA) __ expr)* {
     // => binary_expr | { type: 'expr_list'; value: expr[] }
     const len = tail.length
     let result = head;
@@ -4394,6 +4404,8 @@ KW_INNER    = "INNER"i    !ident_start
 KW_JOIN     = "JOIN"i     !ident_start
 KW_OUTER    = "OUTER"i    !ident_start
 KW_UNION    = "UNION"i    !ident_start
+KW_INTERSECT   = "INTERSECT"i    !ident_start
+KW_EXCEPT    = "EXCEPT"i    !ident_start
 KW_VALUES   = "VALUES"i   !ident_start
 KW_USING    = "USING"i    !ident_start
 
