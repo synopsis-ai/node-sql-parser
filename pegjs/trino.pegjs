@@ -3502,7 +3502,7 @@ column_ref
           type: 'column_ref',
           schema: schema,
           table: tbl[3],
-          column: col[0][3],
+          column: { expr: col[0][3] },
           collate: ce && ce[1],
         };
       }
