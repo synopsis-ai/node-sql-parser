@@ -113,6 +113,13 @@ describe('trino', () => {
       title: "DESCRIBE statement with fully qualified name",
       sql: ['DESCRIBE my_catalog.my_schema.my_table', 'DESCRIBE "my_catalog"."my_schema"."my_table"'],
     },
+    {
+      title: 'three-part column references such as struct field access',
+      sql: [
+        'SELECT s.x.y AS v FROM t s WHERE s.x.y = 1 ORDER BY s.x.y',
+        'SELECT "s"."x".y AS "v" FROM "t" AS "s" WHERE "s"."x".y = 1 ORDER BY "s"."x".y ASC',
+      ],
+    },
   ];
   SQL_LIST.forEach((sqlInfo) => {
     const { title, sql } = sqlInfo;
