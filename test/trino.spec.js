@@ -120,6 +120,41 @@ describe('trino', () => {
         'SELECT "s"."x".y AS "v" FROM "t" AS "s" WHERE "s"."x".y = 1 ORDER BY "s"."x".y ASC',
       ],
     },
+    {
+      title: 'scalar subquery in select list',
+      sql: [
+        'SELECT a, (SELECT max(b) FROM u) AS m FROM t',
+        'SELECT a, (SELECT MAX(b) FROM "u") AS "m" FROM "t"',
+      ],
+    },
+    {
+      title: 'scalar subquery in comparison',
+      sql: [
+        'SELECT a FROM t WHERE a > (SELECT avg(b) FROM u)',
+        'SELECT a FROM "t" WHERE a > (SELECT AVG(b) FROM "u")',
+      ],
+    },
+    {
+      title: 'exists subquery',
+      sql: [
+        'SELECT a FROM t WHERE EXISTS (SELECT 1 FROM u WHERE u.id = t.id) AND NOT EXISTS (SELECT 1 FROM v)',
+        'SELECT a FROM "t" WHERE EXISTS(SELECT 1 FROM "u" WHERE "u".id = "t".id) AND NOT EXISTS (SELECT 1 FROM "v")',
+      ],
+    },
+    {
+      title: 'except',
+      sql: [
+        'SELECT a FROM t EXCEPT SELECT a FROM u',
+        'SELECT a FROM "t" EXCEPT SELECT a FROM "u"',
+      ],
+    },
+    {
+      title: 'intersect with order by and limit',
+      sql: [
+        'SELECT a FROM t INTERSECT SELECT a FROM u ORDER BY a LIMIT 5',
+        'SELECT a FROM "t" INTERSECT SELECT a FROM "u" ORDER BY a ASC LIMIT 5',
+      ],
+    },
   ];
   SQL_LIST.forEach((sqlInfo) => {
     const { title, sql } = sqlInfo;
@@ -204,7 +239,7 @@ describe('trino', () => {
     let sql = 'SELECT numbers, transform(numbers, n -> max(n)) as squared_numbers FROM (VALUES (ARRAY[1, 2]),(ARRAY[3, 4]),(ARRAY[5, 6, 7])) AS t(numbers);'
     expect(parser.astify.bind(parser, sql, opt)).to.throw('Aggregations are not supported in lambda expressions')
     sql = 'SELECT numbers, transform(numbers, n -> 2 + (select 3)) as squared_numbers FROM (VALUES (ARRAY[1, 2]),(ARRAY[3, 4]),(ARRAY[5, 6, 7])) AS t(numbers);'
-    expect(parser.astify.bind(parser, sql, opt)).to.throw('invalid column clause with select statement')
+    expect(parser.astify.bind(parser, sql, opt)).to.throw('Subqueries are not supported in lambda expressions')
   })
   it('should support deep nest function call', function () {
     this.timeout(100)
