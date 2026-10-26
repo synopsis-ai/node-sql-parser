@@ -303,6 +303,20 @@ describe('trino', () => {
       ],
     },
     {
+      title: 'at time zone on a column reference',
+      sql: [
+        "SELECT created_at AT TIME ZONE 'UTC' AS utc FROM events WHERE e.ts AT TIME ZONE 'America/Chicago' > x",
+        `SELECT created_at AT TIME ZONE 'UTC' AS "utc" FROM "events" WHERE "e".ts AT TIME ZONE 'America/Chicago' > x`,
+      ],
+    },
+    {
+      title: 'position with in syntax',
+      sql: [
+        "SELECT POSITION('x' IN name) AS pos, position(a, b) FROM t",
+        `SELECT POSITION('x' IN name) AS "pos", position(a, b) FROM "t"`,
+      ],
+    },
+    {
       title: 'intersect with order by and limit',
       sql: [
         'SELECT a FROM t INTERSECT SELECT a FROM u ORDER BY a LIMIT 5',
